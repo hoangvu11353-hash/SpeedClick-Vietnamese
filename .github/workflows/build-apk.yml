@@ -9,37 +9,78 @@ permissions:
 
 jobs:
   build:
+    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Download repository
       - name: Download source
         uses: actions/checkout@v4
 
+      # 2. Install Java 17
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
+      # 3. Install Android command line tools
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
 
+      # 4. Install Android API 37
       - name: Install Android SDK 37
+        shell: bash
         run: |
-          sdkmanager --install "platforms;android-37" "build-tools;37.0.0"
+          sdkmanager --install \
+            "platforms;android-37.0" \
+            "build-tools;37.0.0"
 
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+
+          if [ -d "$SDK/platforms/android-37.0" ]; then
+            ln -s android-37.0 "$SDK/platforms/android-37"
+          else
+            echo "Android API 37 platform not found"
+            exit 1
+          fi
+
+      # 5. Extract Vietnamese source
       - name: Extract source
+        shell: bash
         run: |
-          unzip -q speedclick-v1.0.12-vietnamese-source.zip -d source
-          chmod +x source/SpeedClick-v1.0.12-Vietnamese/gradlew
+          if [ ! -f speedclick-v1.0.12-vietnamese-source.zip ]; then
+            echo "Source ZIP not found in repository root"
+            ls -lah
+            exit 1
+          fi
 
+          mkdir -p source
+          unzip -q speedclick-v1.0.12-vietnamese-source.zip -d source
+
+          PROJECT="source/SpeedClick-v1.0.12-Vietnamese"
+
+          if [ ! -f "$PROJECT/gradlew" ]; then
+            echo "Gradle wrapper not found"
+            find source -maxdepth 4 -name gradlew
+            exit 1
+          fi
+
+          chmod +x "$PROJECT/gradlew"
+
+      # 6. Build debug APK
       - name: Build APK
         working-directory: source/SpeedClick-v1.0.12-Vietnamese
-        run: ./gradlew --no-daemon assembleDebug
+        run: |
+          ./gradlew --no-daemon --stacktrace assembleDebug
 
+      # 7. Upload APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: SpeedClick-Vietnamese-APK
           path: source/SpeedClick-v1.0.12-Vietnamese/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 7
