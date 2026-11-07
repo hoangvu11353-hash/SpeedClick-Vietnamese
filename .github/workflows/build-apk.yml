@@ -48,15 +48,11 @@ jobs:
           fi
 
       # 5. Extract Vietnamese source
+      
+
       - name: Extract source
         shell: bash
         run: |
-          if [ ! -f speedclick-v1.0.12-vietnamese-source.zip ]; then
-            echo "Source ZIP not found in repository root"
-            ls -lah
-            exit 1
-          fi
-
           mkdir -p source
           unzip -q speedclick-v1.0.12-vietnamese-source.zip -d source
 
@@ -64,11 +60,19 @@ jobs:
 
           if [ ! -f "$PROJECT/gradlew" ]; then
             echo "Gradle wrapper not found"
-            find source -maxdepth 4 -name gradlew
+            find source -name gradlew
             exit 1
           fi
 
+          # Fix Windows CRLF line endings
+          sed -i 's/\r$//' "$PROJECT/gradlew"
+
+          # Set executable permission
           chmod +x "$PROJECT/gradlew"
+
+          # Verify shell script
+          head -n 1 "$PROJECT/gradlew"
+
 
       # 6. Build debug APK
       - name: Build APK
