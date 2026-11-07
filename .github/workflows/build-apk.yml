@@ -22,28 +22,24 @@ jobs:
           java-version: '17'
 
       - name: Set up Android SDK
-  uses: android-actions/setup-android@v4
-  with:
-    packages: 'platform-tools'
-    
-     - name: Install Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android SDK 37
         run: |
-          sdkmanager --licenses
-          sdkmanager "platforms;android-37" "build-tools;37.0.0"
+          sdkmanager --install "platforms;android-37" "build-tools;37.0.0"
 
       - name: Extract source
         run: |
-          unzip -q speedclick-v1.0.12-vietnamese-source.zip -d .
-          chmod +x SpeedClick-v1.0.12-Vietnamese/gradlew
+          unzip -q speedclick-v1.0.12-vietnamese-source.zip -d source
+          chmod +x source/SpeedClick-v1.0.12-Vietnamese/gradlew
 
       - name: Build APK
-        working-directory: SpeedClick-v1.0.12-Vietnamese
+        working-directory: source/SpeedClick-v1.0.12-Vietnamese
         run: ./gradlew --no-daemon assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: SpeedClick-Vietnamese-APK
-          path: SpeedClick-v1.0.12-Vietnamese/app/build/outputs/apk/debug/app-debug.apk
+          path: source/SpeedClick-v1.0.12-Vietnamese/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          
